@@ -41,7 +41,7 @@ RUN apt-get install -y vim less postgresql-client redis-tools
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && apt-get install -y nodejs
 
-WORKDIR /home/superset
+WORKDIR /home/superset      
 
 COPY requirements.txt .
 COPY requirements-dev.txt .
@@ -51,10 +51,26 @@ RUN pip install --upgrade setuptools pip \
     && pip install -r requirements.txt -r requirements-dev.txt -r requirements-extra.txt \
     && rm -rf /root/.cache/pip
 
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | ACCEPT_EULA=Y apt-key add - 
+
+RUN curl https://packages.microsoft.com/config/debian/8/prod.list > /etc/apt/sources.list.d/mssql-release.list 
+RUN apt-get update 
+RUN ACCEPT_EULA=Y apt-get install -y msodbcsql
+RUN ACCEPT_EULA=Y apt-get install -y msodbcsql17
+RUN ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
+RUN pip install pyodbc
+
+RUN echo "nb_NO.UTF-8 UTF-8" > /etc/locale.gen \
+    && echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
+    && apt-get install -y locales
+
 COPY --chown=superset:superset superset superset
 
 ENV PATH=/home/superset/superset/bin:$PATH \
     PYTHONPATH=/home/superset/superset/:$PYTHONPATH
+
+RUN apt-get install -y sqlite3 libsqlite3-dev
+RUN touch /tmp_db.db
 
 USER superset
 
